@@ -9,13 +9,18 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.test.utils import override_settings
 
+from certificates.models import (
+    CertificateInvalidation,
+    CertificateStatuses,
+    GeneratedCertificate
+)
+from certificates.tests.factories import CertificateInvalidationFactory
 from opaque_keys.edx.keys import CourseKey
 from student.tests.factories import UserFactory
 from student.models import CourseEnrollment
 from student.roles import GlobalStaff, SupportStaffRole
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
-from certificates.models import GeneratedCertificate, CertificateStatuses
 
 FEATURES_WITH_CERTS_ENABLED = settings.FEATURES.copy()
 FEATURES_WITH_CERTS_ENABLED['CERTIFICATES_HTML_VIEW'] = True
@@ -326,6 +331,35 @@ class CertificateRegenerateTests(CertificateSupportTestCase):
         num_certs = GeneratedCertificate.eligible_certificates.filter(user=self.student).count()
         self.assertEqual(num_certs, 1)
 
+    def test_regenerate_cert_with_invalidated_record(self):
+        """ If the certificate is marked as invalid, regenerate the certificate
+        and verify the invalidate entry is deactivated. """
+
+        # mark certificate as invalid
+        self._invalidate_certificate(self.cert)
+        self.assertTrue(self._invalidate_cert_exists())
+        # after invalidation certificate status become un-available.
+        self.assertTrue(
+            self._generated_certificate_exist(
+                user=self.student, status=CertificateStatuses.unavailable
+            )
+        )
+        # Should be able to regenerate
+        response = self._regenerate(
+            course_key=self.CERT_COURSE_KEY,
+            username=self.STUDENT_USERNAME
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(self._invalidate_cert_exists())
+
+        # Check that the user's certificate was updated
+        # Since the student hasn't actually passed the course,
+        # we'd expect that the certificate status will be "notpassing"
+        self.assertTrue(
+            self._generated_certificate_exist(
+                user=self.student, status=CertificateStatuses.notpassing)
+        )
+
     def _regenerate(self, course_key=None, username=None):
         """Call the regeneration end-point and return the response. """
         url = reverse("certificates:regenerate_certificate_for_user")
@@ -338,6 +372,30 @@ class CertificateRegenerateTests(CertificateSupportTestCase):
             params["username"] = username
 
         return self.client.post(url, params)
+
+    def _invalidate_certificate(self, certificate):
+        """ Dry method to mark certificate as invalid. """
+        CertificateInvalidationFactory.create(
+            generated_certificate=certificate,
+            invalidated_by=self.support,
+            active=True
+        )
+        # Invalidate user certificate
+        certificate.invalidate()
+        self.assertFalse(certificate.is_valid())
+
+    def _invalidate_cert_exists(self):
+        """ Dry method to check certificate invalidated entry exists. """
+        return CertificateInvalidation.objects.filter(
+            generated_certificate__user=self.student,
+            active=True
+        ).exists()
+
+    def _generated_certificate_exist(self, user, status):
+        """ Dry method to check if certificate exists. """
+        return GeneratedCertificate.objects.filter(  # pylint: disable=no-member
+            user=user, status=status
+        ).exists()
 
 
 @ddt.ddt
