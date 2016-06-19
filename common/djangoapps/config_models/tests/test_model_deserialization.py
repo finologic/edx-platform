@@ -8,7 +8,6 @@ import os.path
 from django.utils import timezone
 from django.utils.six import BytesIO
 
-from django.test import TestCase
 from django.contrib.auth.models import User
 from django.core.management.base import CommandError
 from django.db import models
@@ -16,6 +15,7 @@ from django.db import models
 from config_models.management.commands import populate_model
 from config_models.models import ConfigurationModel
 from config_models.utils import deserialize_json
+from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
 
 
 class ExampleDeserializeConfig(ConfigurationModel):
@@ -33,7 +33,7 @@ class ExampleDeserializeConfig(ConfigurationModel):
         )
 
 
-class DeserializeJSONTests(TestCase):
+class DeserializeJSONTests(CacheIsolationTestCase):
     """
     Tests of deserializing the JSON representation of ConfigurationModels.
     """
@@ -156,7 +156,7 @@ class DeserializeJSONTests(TestCase):
             deserialize_json(BytesIO(test_json), self.test_username)
 
 
-class PopulateModelTestCase(TestCase):
+class PopulateModelTestCase(CacheIsolationTestCase):
     """
     Tests of populate model management command.
     """

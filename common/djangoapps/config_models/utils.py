@@ -6,8 +6,6 @@ from rest_framework.parsers import JSONParser
 from rest_framework.serializers import ModelSerializer
 from django.contrib.auth.models import User
 
-import copy
-
 
 def get_serializer_class(configuration_model):
     """ Returns a ConfigurationModel serializer class for the supplied configuration_model. """

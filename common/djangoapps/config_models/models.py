@@ -177,7 +177,7 @@ class ConfigurationModel(models.Model):
         cache.set(cache_key, values, cls.cache_timeout)
         return values
 
-    def fields_equal(self, instance, fields_to_ignore=["id", "change_date", "changed_by"]):
+    def fields_equal(self, instance, fields_to_ignore=("id", "change_date", "changed_by")):
         """
         Compares this instance's fields to the supplied instance to test for equality.
         This will ignore any fields in `fields_to_ignore`.
@@ -195,7 +195,7 @@ class ConfigurationModel(models.Model):
         return True
 
     @classmethod
-    def fields_equal_json(cls, json, fields_to_ignore=["id", "change_date", "changed_by"]):
+    def fields_equal_json(cls, json, fields_to_ignore=("id", "change_date", "changed_by")):
         """
         Compares this instance to a model instance created from the supplied JSON for equality.
         This will ignore any fields in `fields_to_ignore`.
