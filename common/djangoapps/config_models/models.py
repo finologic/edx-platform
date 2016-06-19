@@ -193,3 +193,23 @@ class ConfigurationModel(models.Model):
                     return False
 
         return True
+
+    @classmethod
+    def fields_equal_json(cls, json, fields_to_ignore=["id", "change_date", "changed_by"]):
+        """
+        Compares this instance to a model instance created from the supplied JSON for equality.
+        This will ignore any fields in `fields_to_ignore`.
+
+        Args:
+            fields_to_ignore: List of fields that should not be compared for equality
+
+        Returns: True if the checked fields are all equivalent
+        """
+        keys = set(json.keys()).intersection(cls.KEY_FIELDS)
+        values = tuple(json[key] for key in keys)
+        current = cls.current(*values)
+        if current.id is not None:
+            new_instance = cls(**json)
+            return current.fields_equal(new_instance, fields_to_ignore)
+
+        return False

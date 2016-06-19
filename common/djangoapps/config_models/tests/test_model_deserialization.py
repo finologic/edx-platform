@@ -107,12 +107,15 @@ class DeserializeJSONTests(TestCase):
         betty.int_field = -8
         betty.save()
 
+        self.assertEquals(3, len(ExampleDeserializeConfig.objects.all()))
+        self.assertEquals(-8, ExampleDeserializeConfig.current('betty').int_field)
+
         # Now importing will add a new entry for Betty.
         with open(self.fixture_path) as data:
             deserialize_json(data, self.test_username)
 
-        self.assertEquals(3, len(ExampleDeserializeConfig.objects.all()))
-        self.assertEquals(-8, ExampleDeserializeConfig.current('betty').int_field)
+        self.assertEquals(4, len(ExampleDeserializeConfig.objects.all()))
+        self.assertEquals(5, ExampleDeserializeConfig.current('betty').int_field)
 
     def test_bad_username(self):
         """
